@@ -16,8 +16,7 @@ KEYS_FILE = 'output/keys.txt'
 
 
 RE_CONFIG_IGNORE = re.compile('\s*#.*')
-
-
+RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
 def print_values(values, indent):
     val = json.loads(str(values))
@@ -37,6 +36,16 @@ def proccess_config():
         elif RE_CONFIG_IGNORE.match(line):
             print(f'CONFIG: Ignoring config line {line}.')
         else:
+            pattern = ''
+            m = RE_CONFIG_REGEX.match(line)
+            if m:
+                pattern = m.group(1)
+            else:
+                pattern = f'.*{re.escape(line)}.*'
+            searches.append(re.compile(pattern, re.IGNORECASE))
+            print(f'CONFIG: installed pattern {pattern}')
+
+
             searches.append(re.compile(line, re.IGNORECASE))
 
     return searches
@@ -78,12 +87,16 @@ def write_item_keys(matches, output_keys):
         output_keys.write(f'   {pattern}, {where}{os.linesep}')
 
 def search_items(index, consul_instance, searches, output, output_keys):
+    print(f'*****{os.linesep}Search started, index {index}.')
     index, data = consul_instance.kv.get(index, recurse=SEARCH_RECURSE)
+    count = 0
     for item in data:
         res = search_item(item, searches)
         if len(res[0]) > 0:
+            count += 1
             write_item_output(res, output)
             write_item_keys(res, output_keys)
+    print(f'****{os.linesep}Search finished.{os.linesep}{count} items found.')
 
 
 def main():
