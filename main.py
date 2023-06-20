@@ -99,9 +99,19 @@ def search_items(index, consul_instance, searches, output, output_keys):
     print(f'****{os.linesep}Search finished.{os.linesep}{count} items found.')
 
 
+def search_subitems(index, consul_instance):
+    print(f'*****{os.linesep}Search started, index {index}.')
+    index_s, data = consul_instance.kv.get(index, keys=True)
+    for item in data:
+        print(item[len(index):])
+
+
+
 def main():
     searches = proccess_config()
     consul_instance = consul.Consul(host=CONSUL_PATH, port=CONSUL_PORT)
+    #search_subitems("salt-shared/prod/adc/groups/LMC0-0001/profiles/LMC0-0001/hosts/", consul_instance)
+    #exit(0)
     with open(OUTPUT_FILE, 'w') as output, open(KEYS_FILE, 'w') as output_keys:
         search_items(SEARCH_INDEX, consul_instance, searches, output, output_keys)
 
