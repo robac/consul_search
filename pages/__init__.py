@@ -1,1 +1,1 @@
-__all__ = ["homepage", "search"]
+__all__ = ["search"]
