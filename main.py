@@ -1,7 +1,6 @@
 from pages import *
 from nicegui import app, ui
 
-
 @ui.page('/')
 def route_homepage() -> None:
     homepage.content()
@@ -11,6 +10,4 @@ def route_search() -> None:
     search.content()
 
 
-
-ui.run(title='Modularization Example')
-
+ui.run()

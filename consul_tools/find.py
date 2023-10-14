@@ -1,23 +1,14 @@
+import asyncio
 import os
 import consul
 import json
 import re
 
-
-CONSUL_PATH = 'consul.consul-1.cecolo.gofg.net'
-CONSUL_PORT = 8500
-CONSUL_ENCODING = 'UTF-8'
-SEARCH_RECURSE = True
-SEARCH_INDEX = ''
-INPUT_FILE = 'input/input.conf'
-OUTPUT_FILE = 'output/output.txt'
-KEYS_FILE = 'output/keys.txt'
-
 RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
-def search_item(item, searches):
+def search_item(item, searches, encoding):
     res = []
-    value = item['Value'].decode(CONSUL_ENCODING) if (('Value' in item) and item['Value'] is not None) else None
+    value = item['Value'].decode(encoding) if (('Value' in item) and item['Value'] is not None) else None
     for s in searches:
         if s.match(item['Key']):
             res.append(('KEY', s.pattern))
@@ -26,12 +17,12 @@ def search_item(item, searches):
 
     return (res, item['Key'], value)
 
-def search_items(index, consul_instance, searches):
+async def search_items(index, consul_instance, searches, recurse=False, encoding="UTF-8"):
     results = []
-    index, data = consul_instance.kv.get(index, recurse=SEARCH_RECURSE)
+    index, data = asyncio.to_thread(consul_instance.kv.get(index, recurse=recurse))
     count = 0
     for item in data:
-        res = search_item(item, searches)
+        res = search_item(item, searches, encoding)
         if len(res[0]) > 0:
             results.append(res)
     return results
@@ -49,7 +40,7 @@ def prepare_searches(searches):
     return result
 
 
-async def find(what):
+async def find(what, config):
     searches = prepare_searches(what)
-    consul_instance = consul.Consul(host=CONSUL_PATH, port=CONSUL_PORT)
-    return search_items(SEARCH_INDEX, consul_instance, searches)
+    consul_instance = consul.Consul(host=config["CONSUL_PATH"], port=config["CONSUL_PORT"])
+    return await search_items(config["SEARCH_INDEX"], consul_instance, searches, config["SEARCH_RECURSE"], config["CONSUL_ENCODING"])
