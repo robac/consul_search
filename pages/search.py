@@ -38,6 +38,7 @@ def draw_result():
         draw_detail.refresh()
 
     data = [{
+        "found_key" : i[0][0],
         "key" : i[1],
         "value" : i[2]
     } for i in result] if result else None
@@ -45,11 +46,12 @@ def draw_result():
     grid = ui.aggrid({
         'defaultColDef': {'flex': 1},
         'columnDefs': [
+            {'headerName': 'FK', 'field': 'found_key', 'width': 10},
             {'headerName': 'Key', 'field': 'key'},
             {'headerName': 'Value', 'field': 'value'}
         ],
         'rowData': data,
-        'rowSelection': 'multiple',
+        'rowSelection': 'single',
     }).on('cellClicked', lambda event: handle_cell_click())
 
 def get_config():
@@ -71,8 +73,8 @@ def draw_detail():
 
 
 def content() -> None:
-    #ui.label("Nothing").bind_text(searcher, 'last_update', forward=lambda x: x if x else "No data")
     with ui.card().classes('w-full'):
+        ui.label("What to search:")
         input = ui.input(placeholder='what to search', value="salt")
         ui.button('Search', on_click= lambda e: handle_click(e.sender, input.value))
     with ui.row().classes('w-full'):

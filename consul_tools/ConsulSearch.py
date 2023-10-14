@@ -46,23 +46,30 @@ class ConsulSearch:
         return result
 
     def _search_item(self, item, searches):
-        res = []
+        """
+        Search in one item for march with 'searches'.
+        :param item: item to process
+        :param searches: list of searched patterns
+        :return: ((search_found_in_key, search_found_in_value), key, value)
+        """
         encoding = self.config["CONSUL_ENCODING"]
         value = item['Value'].decode(encoding) if (('Value' in item) and item['Value'] is not None) else None
+        found_key = False
+        found_value = False
         for s in searches:
             if s.match(item['Key']):
-                res.append(('KEY', s.pattern))
+                found_key = True
             if (value is not None) and s.search(value, re.MULTILINE):
-                res.append(('VALUE', s.pattern))
+                found_value = True
 
-        return (res, item['Key'], value)
+        return ((found_key, found_value), item['Key'], value)
 
     def _search_items(self, searches):
         results = []
         count = 0
         for item in self.consul_data:
             res = self._search_item(item, searches)
-            if len(res[0]) > 0:
+            if (res[0][0] or res[0][1]):
                 results.append(res)
         return results
 
