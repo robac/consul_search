@@ -15,10 +15,8 @@ def get_config():
 
 def aggrid_interactive_table(df: pd.DataFrame):
     options = GridOptionsBuilder.from_dataframe(
-        df, enableRowGroup=True, enableValue=True, enablePivot=True
+        df
     )
-
-    options.configure_side_bar()
 
     options.configure_selection("single")
     selection = AgGrid(
@@ -28,19 +26,24 @@ def aggrid_interactive_table(df: pd.DataFrame):
         theme="alpine",
         update_mode=GridUpdateMode.MODEL_CHANGED,
         allow_unsafe_jscode=True,
+        width=1000
     )
 
     return selection
 
+search_ins = ConsulSearch()
+search_ins.load_data(get_config())
 
 st.header('Consul search', divider='blue')
 title = st.text_input('Text', '')
 keys = st.checkbox('search in keys', value=True)
 values = st.checkbox('search in values', value=True)
 if len(title) > 0:
-    search_ins = ConsulSearch()
-    search_ins.load_data(get_config())
     data = search_ins.search([title])
-    df = pd.DataFrame(data=data)
-    selection = aggrid_interactive_table(df)
-    st.write("hotovo")
+    if len(data) > 0:
+        selection = aggrid_interactive_table(data)
+        if selection and len(selection["selected_rows"]) > 0:
+            st.write(selection["selected_rows"][0]["key"])
+            st.write(selection["selected_rows"][0]["value"])
+    else:
+        st.write("**no data**")

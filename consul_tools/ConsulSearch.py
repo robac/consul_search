@@ -1,6 +1,9 @@
 import datetime
+import random
+
 import consul
 import re
+import pandas as pd
 
 RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
@@ -66,13 +69,21 @@ class ConsulSearch:
 
     def _search_items(self, searches):
         print(f"Search start. Data version: {self.last_update}")
-        results = []
+        df_structure = {
+            'inkey': [],
+            'invalue': [],
+            'key': [],
+            'value' : []
+        }
+
+        results = pd.DataFrame(df_structure)
         count = 0
         for item in self.consul_data:
 
             res = self._search_item(item, searches)
             if (res[0][0] or res[0][1]):
-                results.append(res)
+                new_row = {'inkey': res[0][0], 'invalue': res[0][1], 'key': res[1], 'value' : res[2]}
+                results.loc[len(results)] = new_row
         return results
 
     def search(self, searches):
