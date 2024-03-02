@@ -65,9 +65,11 @@ class ConsulSearch:
         return ((found_key, found_value), item['Key'], value)
 
     def _search_items(self, searches):
+        print(f"Search start. Data version: {self.last_update}")
         results = []
         count = 0
         for item in self.consul_data:
+
             res = self._search_item(item, searches)
             if (res[0][0] or res[0][1]):
                 results.append(res)
