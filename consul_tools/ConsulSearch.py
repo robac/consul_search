@@ -47,7 +47,7 @@ class ConsulSearch:
 
     def _search_item(self, item, searches):
         """
-        Search in one item for march with 'searches'.
+        Search in one item for match with 'searches'.
         :param item: item to process
         :param searches: list of searched patterns
         :return: ((search_found_in_key, search_found_in_value), key, value)
