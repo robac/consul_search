@@ -1,6 +1,4 @@
 import datetime
-import random
-
 import consul
 import re
 import pandas as pd
@@ -18,6 +16,8 @@ class SearchOptions:
     def __reduce__(self):
         return (self.SEARCH_KEYS, self.SEARCH_VALUES, self.REGULAR, self.INDEX)
 
+    def __str__(self):
+        return f"{self.SEARCH_KEYS}  {self.SEARCH_VALUES}  {self.REGULAR}  {self.INDEX}"
 
 
 
@@ -50,9 +50,9 @@ class ConsulSearch:
         print("Load started")
         self.config = config
         print(config)
-        consul_instance = consul.Consul(host=self.config["CONSUL_PATH"], port=self.config["CONSUL_PORT"])
+        consul_instance = consul.Consul(host=self.config["host"], port=self.config["port"])
         #try:
-        self.consul_index, self.consul_data = consul_instance.kv.get(self.config["SEARCH_INDEX"], recurse=self.config["SEARCH_RECURSE"])
+        self.consul_index, self.consul_data = consul_instance.kv.get("", recurse=True)
         self.last_update = datetime.datetime.now()
         self.load_sections()
         #except Exception as e:
@@ -74,15 +74,20 @@ class ConsulSearch:
             print(f'CONFIG: installed pattern {pattern}')
         return result
 
-    def _search_item(self, item, searches, options : SearchOptions):
+    def _search_item(self, item, searches, excludes, options : SearchOptions):
         """
         Search in one item for match with 'searches'.
         :param item: item to process
         :param searches: list of searched patterns
         :return: ((search_found_in_key, search_found_in_value), key, value)
         """
-        encoding = self.config["CONSUL_ENCODING"]
+        encoding = self.config["encoding"]
+        if excludes is not None and re.match(excludes, item['Key']):
+            return ((False, False), None)
+            print("excluded {item['Key']}")
+
         value = item['Value'].decode(encoding) if (('Value' in item) and item['Value'] is not None) else None
+
         found_key = False
         found_value = False
         for s in searches:
@@ -93,7 +98,7 @@ class ConsulSearch:
 
         return ((found_key, found_value), item['Key'], value)
 
-    def _search_items(self, searches, options : SearchOptions):
+    def _search_items(self, searches, excludes, options : SearchOptions):
         print(f"Search start. Data version: {self.last_update}")
         df_structure = {
             'inkey': [],
@@ -105,16 +110,30 @@ class ConsulSearch:
         results = pd.DataFrame(df_structure)
         count = 0
         for item in self.consul_data:
-
-            res = self._search_item(item, searches, options)
+            res = self._search_item(item, searches, excludes, options)
             if (res[0][0] or res[0][1]):
                 new_row = {'inkey': res[0][0], 'invalue': res[0][1], 'key': res[1], 'value' : res[2]}
                 results.loc[len(results)] = new_row
         return results
+
+    def _prepare_excludes(self):
+        if "exclude" not in self.config:
+            return None
+
+        lst = []
+        for item in self.config["exclude"]:
+            pattern1 = f"^{re.escape(item)}$"
+            pattern2 = f"^{re.escape(item)}/.+$"
+            lst.append(pattern1)
+            lst.append(pattern2)
+
+        return "|".join(lst)
 
     def search(self, searches, options : SearchOptions):
         if self.consul_data is None:
             return None
 
         searches = self._prepare_searches(searches, options)
-        return self._search_items(searches, options)
+        excludes = self._prepare_excludes()
+        print (f"Excludes {excludes}")
+        return self._search_items(searches, excludes, options)

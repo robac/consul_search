@@ -1,11 +1,13 @@
 cecolo:
   host: consul.consul-1.cecolo.gofg.net
   port : 8500
+  edit-url: http://consul.consul-1.cecolo.gofg.net:8500/ui/cecolo/kv/{suffix}/edit
   encoding : UTF-8
-  index:
 
 devel:
   host: consul.dev.k8s.cecolo.gofg.net
   port: 80
+  edit-url: http://consul.dev.k8s.cecolo.gofg.net/ui/dc1/kv/{suffix}/edit
   encoding: UTF-8
-  index:
+  exclude:
+    - vault
