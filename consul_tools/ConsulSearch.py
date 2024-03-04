@@ -13,6 +13,9 @@ class SearchOptions:
         self.SEARCH_VALUES = search_values
         self.INDEX = index
 
+    def __reduce__(self):
+        return (self.SEARCH_KEYS, self.SEARCH_VALUES, self.INDEX)
+
 
 
 
