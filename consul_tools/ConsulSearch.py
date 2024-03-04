@@ -9,13 +9,14 @@ from collections import defaultdict
 RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
 class SearchOptions:
-    def __init__(self, search_keys, search_values, index):
+    def __init__(self, search_keys, search_values, regular, index):
         self.SEARCH_KEYS = search_keys
         self.SEARCH_VALUES = search_values
         self.INDEX = index
+        self.REGULAR = regular
 
     def __reduce__(self):
-        return (self.SEARCH_KEYS, self.SEARCH_VALUES, self.INDEX)
+        return (self.SEARCH_KEYS, self.SEARCH_VALUES, self.REGULAR, self.INDEX)
 
 
 
@@ -28,6 +29,7 @@ class ConsulSearch:
         self.consul_index = None
         self.consul_data = None
         self.config = None
+        self.sections = None
 
     @property
     def can_process(self):
@@ -35,42 +37,40 @@ class ConsulSearch:
 
     def load_sections(self):
         sections = defaultdict()
+        sections[""] = None
         for item in self.consul_data:
             key = item["Key"]
             path = key.split("/")
             if len(path) > 1:
-                section = '/'.join(sections[0:-1])
-                print(section)
-                print(type(section))
+                section = '/'.join(path [0:-1])
                 sections[section] = None
-        for i in sections:
-            print(i)
+        self.sections = sections
 
     def load_data(self, config):
         print("Load started")
         self.config = config
+        print(config)
         consul_instance = consul.Consul(host=self.config["CONSUL_PATH"], port=self.config["CONSUL_PORT"])
-        try:
-            self.consul_index, self.consul_data = consul_instance.kv.get(self.config["SEARCH_INDEX"], recurse=self.config["SEARCH_RECURSE"])
-            self.last_update = datetime.datetime.now()
-        except Exception as e:
-            self.consul_index, self.consul_data, self.last_update = (None, None, None)
-            print(e)
+        #try:
+        self.consul_index, self.consul_data = consul_instance.kv.get(self.config["SEARCH_INDEX"], recurse=self.config["SEARCH_RECURSE"])
+        self.last_update = datetime.datetime.now()
+        self.load_sections()
+        #except Exception as e:
+        #    self.consul_index, self.consul_data, self.last_update = (None, None, None)
+        #    print(e)
         print("load finished")
         print(f"index: {self.consul_index}")
         print(len(self.consul_data) if self.consul_data else 0)
 
 
-    def _prepare_searches(self, searches):
+    def _prepare_searches(self, searches, options : SearchOptions):
         result = []
         for search in searches:
-            m = RE_CONFIG_REGEX.match(search)
-            if m:
-                pattern = m.group(1)
+            if options.REGULAR:
+                pattern = search
             else:
                 pattern = f'{re.escape(search)}'
             result.append(re.compile(pattern, re.IGNORECASE | re.MULTILINE))
-
             print(f'CONFIG: installed pattern {pattern}')
         return result
 
@@ -113,9 +113,8 @@ class ConsulSearch:
         return results
 
     def search(self, searches, options : SearchOptions):
-        print(options.SEARCH_VALUES, options.SEARCH_KEYS)
         if self.consul_data is None:
             return None
 
-        searches = self._prepare_searches(searches)
+        searches = self._prepare_searches(searches, options)
         return self._search_items(searches, options)

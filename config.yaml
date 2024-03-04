@@ -1,0 +1,11 @@
+cecolo:
+  host: consul.consul-1.cecolo.gofg.net
+  port : 8500
+  encoding : UTF-8
+  index:
+
+devel:
+  host: consul.dev.k8s.cecolo.gofg.net
+  port: 80
+  encoding: UTF-8
+  index:
