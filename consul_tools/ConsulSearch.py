@@ -7,6 +7,14 @@ import pandas as pd
 
 RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
+class SearchOptions:
+    def __init__(self, search_keys, search_values, index):
+        self.SEARCH_KEYS = search_keys
+        self.SEARCH_VALUES = search_values
+        self.INDEX = index
+
+
+
 
 class ConsulSearch:
     def __init__(self):
@@ -49,7 +57,7 @@ class ConsulSearch:
             print(f'CONFIG: installed pattern {pattern}')
         return result
 
-    def _search_item(self, item, searches, search_keys, search_values):
+    def _search_item(self, item, searches, options : SearchOptions):
         """
         Search in one item for match with 'searches'.
         :param item: item to process
@@ -61,14 +69,14 @@ class ConsulSearch:
         found_key = False
         found_value = False
         for s in searches:
-            if search_keys and s.match(item['Key']):
+            if options.SEARCH_KEYS and s.match(item['Key']):
                 found_key = True
-            if search_values and (value is not None) and s.search(value):
+            if options.SEARCH_VALUES and (value is not None) and s.search(value):
                 found_value = True
 
         return ((found_key, found_value), item['Key'], value)
 
-    def _search_items(self, searches, search_keys, search_values):
+    def _search_items(self, searches, options : SearchOptions):
         print(f"Search start. Data version: {self.last_update}")
         df_structure = {
             'inkey': [],
@@ -81,15 +89,15 @@ class ConsulSearch:
         count = 0
         for item in self.consul_data:
 
-            res = self._search_item(item, searches, search_keys, search_values)
+            res = self._search_item(item, searches, options)
             if (res[0][0] or res[0][1]):
                 new_row = {'inkey': res[0][0], 'invalue': res[0][1], 'key': res[1], 'value' : res[2]}
                 results.loc[len(results)] = new_row
         return results
 
-    def search(self, searches, search_keys, search_values):
+    def search(self, searches, options : SearchOptions):
         if self.consul_data is None:
             return None
 
         searches = self._prepare_searches(searches)
-        return self._search_items(searches, search_keys, search_values)
+        return self._search_items(searches, options)

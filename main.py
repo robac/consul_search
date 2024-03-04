@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode
-from consul_tools.ConsulSearch import ConsulSearch
+from consul_tools.ConsulSearch import ConsulSearch, SearchOptions
 from consul_tools import utils
 
 def get_config():
@@ -35,8 +35,8 @@ def aggrid_interactive_table(df: pd.DataFrame):
 
 
 @st.cache_data
-def load_results(text, search_keys, search_values):
-    return search_ins.search([text], search_keys, search_values)
+def load_results(text, options : SearchOptions):
+    return search_ins.search([text], options)
 
 search_ins = ConsulSearch()
 search_ins.load_data(get_config())
@@ -47,7 +47,8 @@ title = st.text_input('Text', '')
 keys = st.checkbox('search in keys', value=True)
 values = st.checkbox('search in values', value=True)
 if len(title) > 0:
-    data = load_results(title, keys, values)
+    options = SearchOptions(keys, values, "")
+    data = load_results(title, options)
     if data is not None and len(data) > 0:
         selection = aggrid_interactive_table(data)
         if selection and len(selection["selected_rows"]) > 0:
