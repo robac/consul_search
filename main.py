@@ -4,7 +4,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode
 from consul_tools.ConsulSearch import ConsulSearch, SearchOptions
 from consul_tools import utils
-from streamlit_searchbox import st_searchbox
+from st_aggrid.shared import GridUpdateMode, DataReturnMode, JsCode, walk_gridOptions, ColumnsAutoSizeMode, AgGridTheme, ExcelExportMode
 import yaml
 
 @st.cache_data
@@ -34,6 +34,7 @@ def aggrid_interactive_table(df: pd.DataFrame):
         theme="material",
         update_mode=GridUpdateMode.MODEL_CHANGED,
         allow_unsafe_jscode=True,
+        columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
         height=500
     )
 
