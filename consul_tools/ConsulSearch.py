@@ -4,6 +4,7 @@ import random
 import consul
 import re
 import pandas as pd
+from collections import defaultdict
 
 RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
@@ -31,6 +32,19 @@ class ConsulSearch:
     @property
     def can_process(self):
         return self.last_update and not self.in_progress
+
+    def load_sections(self):
+        sections = defaultdict()
+        for item in self.consul_data:
+            key = item["Key"]
+            path = key.split("/")
+            if len(path) > 1:
+                section = '/'.join(sections[0:-1])
+                print(section)
+                print(type(section))
+                sections[section] = None
+        for i in sections:
+            print(i)
 
     def load_data(self, config):
         print("Load started")
@@ -72,7 +86,7 @@ class ConsulSearch:
         found_key = False
         found_value = False
         for s in searches:
-            if options.SEARCH_KEYS and s.match(item['Key']):
+            if options.SEARCH_KEYS and s.search(item['Key']):
                 found_key = True
             if options.SEARCH_VALUES and (value is not None) and s.search(value):
                 found_value = True
@@ -99,6 +113,7 @@ class ConsulSearch:
         return results
 
     def search(self, searches, options : SearchOptions):
+        print(options.SEARCH_VALUES, options.SEARCH_KEYS)
         if self.consul_data is None:
             return None
 
