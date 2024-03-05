@@ -57,14 +57,14 @@ st.set_page_config(layout="wide")
 config, consul_list = load_consul_configs('config.yaml')
 
 st.header('Consul search', divider='blue')
-instance = st.selectbox('Select Consul instance:', consul_list)
+instance = st.selectbox('Consul instance:', consul_list)
 title = st.text_input('Text', '')
 use_regular = st.checkbox('regular expression', value=False)
 search_keys = st.checkbox('search in keys', value=True)
 search_values = st.checkbox('search in values', value=True)
 search_ins = load_consul_data(config, instance)
 
-if len(title.strip()) > 1:
+if (len(title.strip()) > 2) and (search_keys or search_values):
     options = SearchOptions(search_keys, search_values, use_regular, "")
     data = load_results(title, instance, options)
     if data is not None and len(data) > 0:
@@ -73,4 +73,6 @@ if len(title.strip()) > 1:
             st.write(utils.get_consul_kv_path(get_config(config, instance), selection["selected_rows"][0]["key"]))
             st.code(selection["selected_rows"][0]["value"], line_numbers=True)
     else:
-        st.write("**no data**")
+        st.write(f":red[**no data** for input: {title}]")
+else:
+    st.write("*:blue[There should be at least two characters in Text and \"search in keys\" or \"search in values\" enabled.]*")
