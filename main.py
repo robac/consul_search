@@ -7,6 +7,9 @@ from st_aggrid.shared import GridUpdateMode, ColumnsAutoSizeMode
 import yaml
 import logging
 
+CONFIG_MANDATORY_ITEMS = ["host", "port", "edit-url", "encoding"]
+CONFIG_FILE = "config.yaml"
+
 @st.cache_data
 def load_consul_configs(path):
     config, lst = None, None
@@ -16,6 +19,16 @@ def load_consul_configs(path):
         lst = [item for item in config]
     except:
         logging.error("Can't load config file %s", path)
+
+    error = False
+    print(config)
+    for instance_name, instance in config.items():
+        for item in CONFIG_MANDATORY_ITEMS:
+            if item not in instance:
+                error = True
+                logging.error("Missing item in config file. Instance: %s, item: %s", instance_name, item)
+    if error:
+        return None, None
     return config, lst
 
 
@@ -81,15 +94,15 @@ def output_page():
                 st.write(utils.get_consul_kv_path(get_config(config, instance_name), selection["selected_rows"][0]["key"]))
                 st.code(selection["selected_rows"][0]["value"], line_numbers=True)
         else:
-            st.write(f":red[**no data** for input: {title}]")
+            st.write(f"*:red[**no data** for input \"{title}\"]*")
     else:
         st.write(
-            "*:blue[There should be at least two characters in Text and \"search in keys\" or \"search in values\" enabled.]*")
+            "*:blue[There should be at least two characters in the Text field and \"search in keys\" or \"search in values\" enabled.]*")
 
 
 st.set_page_config(layout="wide")
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s')
-config, consul_list = load_consul_configs('config.yaml')
+config, consul_list = load_consul_configs(CONFIG_FILE)
 output_page()
 
 
