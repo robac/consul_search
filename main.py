@@ -6,9 +6,12 @@ from consul_tools import utils
 from st_aggrid.shared import GridUpdateMode, ColumnsAutoSizeMode
 import yaml
 import logging
+from streamlit_searchbox import st_searchbox
 
 CONFIG_MANDATORY_ITEMS = ["host", "port", "edit-url", "encoding"]
 CONFIG_FILE = "config.yaml"
+
+search_ins = None
 
 @st.cache_data
 def load_consul_configs(path):
@@ -70,7 +73,24 @@ def load_consul_data(config, instance):
 def load_results(text, instance : ConsulSearch, instance_name : str, options : SearchOptions):
     return instance.search([text], options)
 
+
+def search_sections(searchterm: str):
+    global search_ins
+    res = []
+
+    sections = searchterm.split("/")
+    helper = search_ins.sections
+    for section in sections[0:-1]:
+        helper = helper[section]
+
+    for i in helper:
+        if i.startswith(sections[-1]):
+            res.append(i)
+    return res
+
+
 def output_page():
+    global search_ins
     st.header('Consul search', divider='blue')
 
     if config is None or consul_list is None:
@@ -78,12 +98,20 @@ def output_page():
         return
 
     instance_name = st.selectbox('Consul instance:', consul_list)
+    search_ins = load_consul_data(config, instance_name)
     title = st.text_input('Text', '')
+
+    # pass search function to searchbox
+    selected_value = st_searchbox(
+        search_sections,
+        key="wiki_searchbox",
+    )
     use_regular = st.checkbox('regular expression', value=False)
     search_keys = st.checkbox('search in keys', value=True)
     search_values = st.checkbox('search in values', value=True)
-    search_ins = load_consul_data(config, instance_name)
 
+    print("NEWiki")
+    print(search_ins)
 
     if (len(title.strip()) > 2) and (search_keys or search_values):
         options = SearchOptions(search_keys, search_values, use_regular, "")

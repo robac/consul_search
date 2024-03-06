@@ -1,4 +1,6 @@
 import datetime
+import pprint
+
 import consul
 import re
 import pandas as pd
@@ -36,7 +38,18 @@ class ConsulSearch:
         return self.last_update and not self.in_progress
 
     def load_sections(self):
-        pass
+        sections = {}
+        for item in self.consul_data:
+            items = item.split('/')
+            if len(items) > 1:
+                helper = sections
+                for j in items[0:-1]:
+                    if j not in helper:
+                        helper[j] = {}
+                    helper = helper[j]
+                helper = None
+
+        self.sections = sections
 
     def load_data(self, config):
         print("Load started")
@@ -48,13 +61,14 @@ class ConsulSearch:
         try:
             self.consul_index, consul_data = consul_instance.kv.get("", recurse=True)
             self.last_update = datetime.datetime.now()
-            self.load_sections()
+
             for item in consul_data:
                 if self.excludes is not None and re.match(self.excludes, item['Key']):
                     print("excluded {item['Key']}")
                 else:
                     data[item["Key"]] = item["Value"].decode(config["encoding"]) if ("Value" in item and item['Value'] is not None) else None
             self.consul_data = data
+            self.load_sections()
         except Exception as e:
             self.consul_index, self.consul_data, self.last_update = (None, None, None)
             print(e)
