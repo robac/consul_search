@@ -21,7 +21,6 @@ def load_consul_configs(path):
         logging.error("Can't load config file %s", path)
 
     error = False
-    print(config)
     for instance_name, instance in config.items():
         for item in CONFIG_MANDATORY_ITEMS:
             if item not in instance:
@@ -58,30 +57,31 @@ def aggrid_interactive_table(df: pd.DataFrame):
 @st.cache_data
 def load_consul_data(config, instance):
     try:
-        print(f"loading instance {instance}")
+        logging.info(f"loading instance {instance}")
         data = ConsulSearch()
         data.load_data(get_config(config, instance))
-        print ("loading instance size ", len(data.consul_data))
+        logging.info(f"loaded instance {instance}, number of items {len(data.consul_data)}")
         return data
     except:
         return None
 
 @st.cache_data(hash_funcs={ConsulSearch: lambda p: p.last_update})
 def load_results(text, instance : ConsulSearch, instance_name : str, options : SearchOptions):
+    print(instance)
     return instance.search([text], options)
 
 def output_page():
     st.header('Consul search', divider='blue')
 
     if config is None or consul_list is None:
-        st.write('Error loading the config file!')
+        st.write("Error loading the config file!")
         return
 
-    instance_name = st.selectbox('Consul instance:', consul_list)
-    title = st.text_input('Text', '')
-    use_regular = st.checkbox('regular expression', value=False)
-    search_keys = st.checkbox('search in keys', value=True)
-    search_values = st.checkbox('search in values', value=True)
+    instance_name = st.selectbox("Consul instance:", consul_list)
+    title = st.text_input("Text", "")
+    use_regular = st.checkbox("regular expression", value=False)
+    search_keys = st.checkbox("search in keys", value=True)
+    search_values = st.checkbox("search in values", value=True)
     search_ins = load_consul_data(config, instance_name)
 
 
@@ -101,7 +101,7 @@ def output_page():
 
 
 st.set_page_config(layout="wide")
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s')
+logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level=logging.INFO)
 config, consul_list = load_consul_configs(CONFIG_FILE)
 output_page()
 

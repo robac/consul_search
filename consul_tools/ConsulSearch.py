@@ -3,6 +3,7 @@ import consul
 import re
 import pandas as pd
 from collections import defaultdict
+import logging
 
 RE_CONFIG_REGEX = re.compile('\s*re:\s*(.*)')
 
@@ -47,20 +48,17 @@ class ConsulSearch:
         self.sections = sections
 
     def load_data(self, config):
-        print("Load started")
+        logging.info(f"load started, host {self.config['host']}")
         self.config = config
-        print(config)
         consul_instance = consul.Consul(host=self.config["host"], port=self.config["port"])
-        #try:
-        self.consul_index, self.consul_data = consul_instance.kv.get("", recurse=True)
-        self.last_update = datetime.datetime.now()
-        self.load_sections()
-        #except Exception as e:
-        #    self.consul_index, self.consul_data, self.last_update = (None, None, None)
-        #    print(e)
-        print("load finished")
-        print(f"index: {self.consul_index}")
-        print(len(self.consul_data) if self.consul_data else 0)
+        try:
+            self.consul_index, self.consul_data = consul_instance.kv.get("", recurse=True)
+            self.last_update = datetime.datetime.now()
+            self.load_sections()
+        except Exception as e:
+            self.consul_index, self.consul_data, self.last_update = (None, None, None)
+            logging.error(f"loading host {self.config['host']}, %s", e)
+        logging.info(f"load finished, host {self.config['host']}")
 
 
     def _prepare_searches(self, searches, options : SearchOptions):
